@@ -1,15 +1,16 @@
-namespace Jaegs
+namespace Cobra.Core
 
 	class MultiList<of A>
 		"""
 		This class provides a generic n-dimensional multi-list container.
 		The shape of a MultiList is a list of ints specifying the length of each dimension.
+		Dimensions are called axes.
 		The count is the total number of elements in the ML.
 
 		For efficiency reasons, the MultiList class avoids copying its underlying 
 		data as much as possible. A ML can be a read-only view that shares
 		data with an owner ML. The view can have
-		a different shape, count, and/or order of dimensions than its owner.
+		a different shape, count, and/or order of axes than its owner.
 		One way to construct a view is to call ml.slice
 
 		Methods that perform operation in place return "this" which allows for method chaining.
@@ -42,8 +43,9 @@ namespace Jaegs
 		(2) Remove the .slice method and .v property
 		(3) Could potentially support ml[a:b:c, d:e:f]
 		
-		Implementing more methods would for the most part not affect existing code
-		Some methods that would have changes are
+		Implementing more methods would for the most part not affect existing code.
+		The ability to write generic methods will open up a lot of possibilities
+		Some methods that would have changes, however, are
 			Reversing an axis -- http://docs.scipy.org/doc/numpy/reference/generated/numpy.flipud.html#numpy.flipud
 			Removing single length axes -- http://docs.scipy.org/doc/numpy/reference/generated/numpy.squeeze.html#numpy.squeeze
 			Roll -- http://docs.scipy.org/doc/numpy/reference/generated/numpy.roll.html#numpy.roll
@@ -84,7 +86,7 @@ namespace Jaegs
 		var _isReadOnly = false
 		var _isPermuted = false
 		var _isReferred = false 
-			""" If a referrer is GC'ed, _isReferred will still be true """
+			"""If a referrer is GC'ed, _isReferred will still be true"""
 
 		var _count = 1
 
@@ -243,7 +245,7 @@ namespace Jaegs
 
 		def _inversePermuteList(lst as IList<of int>) as IList<of int>
 			"""
-			Reorders the elements in a list according to _dimOrder
+			Reorders the elements in a list according to _inverseDimOrder
 			For example the indices the users gives are in permuted order
 			But the data is stored in the original order.
 			"""
@@ -381,11 +383,9 @@ namespace Jaegs
 			require
 				all for s in shape get s >= .minDimRank and s <= .maxDimRank
 			body
-				# The order in which things are done in this method
-				# is very important
 				newCount = 1
 				for s in shape, newCount *= s
-				if newCount <> .owner.count and .isReferred 
+				if newCount <> .owner.count and .isReferred and not unsafe
 					throw InvalidOperationException(
 					".isReferred == true. To reshape, new shape = [shape] with count [newCount] " + _
 					"must have same count [.count] as previous shape [.shape]. " + _
@@ -478,13 +478,13 @@ namespace Jaegs
 			m2[0, 0, 0] += 1
 			assert m2 <> m
 
-			/#m = MultiList<of int>(2, 2)
+			m = MultiList<of int>(2, 2)
 			n = 1
 			for x in 2
 				for y in 2
 					m[x, y] = n
 					n += 1
-			assert m.enumerate.toList == [1, 2, 3, 4]#/
+			assert m.enumerate.toList == [1, 2, 3, 4]
 
 		test
 			# count, slice, permute, toString
