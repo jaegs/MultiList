@@ -1,0 +1,68 @@
+namespace Jaegs
+	class DefaultDict<of TKey, TValue> inherits Dictionary<of TKey, TValue>
+		cue init(defaultFactory as Func<of TValue>)
+			"""There could be more constructors..."""
+			base.init
+			_defaultFactory = defaultFactory
+
+			
+		var _defaultFactory as Func<of TValue>
+
+		pro defaultFactory from var
+
+		pro [key as TKey] as TValue
+			get
+				val as TValue
+				if .tryGetValue(key, out val), return val
+				default = _defaultFactory()
+				base[key] = default
+				return default
+			set
+				base[key] = value
+
+		
+		/# Should modify get(key as TKey, default as TValue) in ExtendDictionary.cobra
+		 # to throw NotImplementedException() is the type is a DefaultDict
+		 #/	
+
+	class TestDefaultDict
+		"""
+		Examples taken from
+		from http://docs.python.org/library/collections.html#collections.defaultdict.default_factory
+
+		The typing of Pair detracts from the example a little bit, but DefaultDict is useful
+		if you need to make a dictionary of counters or lists.
+		"""
+		
+		test
+			#Count occurance of each letter in 'mississippi'
+			s = 'mississippi'
+			dd = DefaultDict<of char, int>(do = 0)
+			for k in s, dd[k] += 1 #note conciseness
+
+			expected = [Pair<of char, int>(c'i', 4), _
+						Pair<of char, int>(c'p', 2), _
+						Pair<of char, int>(c's', 4), _
+						Pair<of char, int>(c'm', 1)]
+			for key, val in dd
+				assert expected.contains(Pair<of char, int>(key, val))
+
+		test
+			# make a dictionary of lists
+			lst = [Pair<of String, int>('yellow', 1),_
+				   Pair<of String, int>('blue', 2), _
+				   Pair<of String, int>('yellow', 3), _
+				   Pair<of String, int>('blue', 4), _
+				   Pair<of String, int>('red', 1)]
+
+			dd = DefaultDict<of String, IList<of int>>(do = List<of int>())
+			for k, v in lst, dd[k].add(v) #note conciseness
+
+			expected = [ Pair<of String, List<of int>>('blue', [2, 4]), _
+						 Pair<of String, List<of int>>('red', [1]),_
+						 Pair<of String, List<of int>>('yellow', [1, 3])]
+			for key, val in dd
+				assert expected.contains(Pair<of String, List<of int>>(key, val))
+			
+		def main
+			pass
