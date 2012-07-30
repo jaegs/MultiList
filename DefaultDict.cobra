@@ -14,15 +14,15 @@ namespace Jaegs
 			get
 				val as TValue
 				if .tryGetValue(key, out val), return val
-				default = _defaultFactory()
-				base[key] = default
-				return default
+				val = _defaultFactory()
+				base[key] = val
+				return val
 			set
 				base[key] = value
 
 		
 		/# Should modify get(key as TKey, default as TValue) in ExtendDictionary.cobra
-		 # to throw NotImplementedException() is the type is a DefaultDict
+		 # to throw NotImplementedException() if the type is a DefaultDict
 		 #/	
 
 	class TestDefaultDict
