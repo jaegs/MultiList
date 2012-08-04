@@ -208,10 +208,11 @@ namespace Jaegs
 			"""
 			Takes the min count of each item from each Bag
 			"""
-			answer = Bag<of T>(this)
+			answer = Bag<of T>()
 			for item, count in .counts
 				if other.contains(item)
 					answer._data[item] = Math.min(count, other[item])
+					trace item
 			return answer
 
 		def mostCommon(num as int) as ICollection<of T>
@@ -251,7 +252,7 @@ namespace Jaegs
 
 		#intersection
 		test
-			bag1 = Bag<of int>([1, 2, 2])
+			bag1 = Bag<of int>([1, 2, 2, 3])
 			bag2 = Bag<of int>([1, 1, 2])
 			interB = bag1.intersection(bag2)
 			assert interB[1] == 1 and interB[2] == 1 and interB[3] == 0
