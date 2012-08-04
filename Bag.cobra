@@ -277,9 +277,9 @@ namespace Jaegs
 			assert not bag.contains(c'i')
 
 		#.set
-		test
+		/#test
 			bag= Bag<of int>()
-			expect Cobra.Core.RequireException, bag[3] = -2
+			expect Cobra.Core.RequireException, bag[3] = -2 #/
 
 		#toSet
 		test
