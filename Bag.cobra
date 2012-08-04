@@ -187,7 +187,6 @@ namespace Jaegs
 			Only keeps items with count > 0
 			"""
 			answer = Bag<of T>(this)
-			toRemove = List<of T>()
 			for item, count in .counts
 				count = count #suppress warning
 				if other.contains(item)
@@ -205,13 +204,14 @@ namespace Jaegs
 				if answer[item] < count, answer._data[item] = count
 			return answer
 
-		def intersection(other as Bag<of T>) as Bag<of T> #WRONG
+		def intersection(other as Bag<of T>) as Bag<of T>
 			"""
 			Takes the min count of each item from each Bag
 			"""
+			answer = Bag<of T>(this)
 			for item, count in .counts
 				if other.contains(item)
-					answer[item] = max(count, other[item])
+					answer._data[item] = Math.min(count, other[item])
 			return answer
 
 		def mostCommon(num as int) as ICollection<of T>
@@ -254,7 +254,7 @@ namespace Jaegs
 			bag1 = Bag<of int>([1, 2, 2])
 			bag2 = Bag<of int>([1, 1, 2])
 			interB = bag1.intersection(bag2)
-			assert interB[1] == 1 and interB[2] == 1
+			assert interB[1] == 1 and interB[2] == 1 and interB[3] == 0
 
 		#difference
 		test
@@ -282,7 +282,7 @@ namespace Jaegs
 
 		#toSet
 		test
-			bag = Bag<of int>([1, 1, 1, 1, 2, 2, 2, 3]
+			bag = Bag<of int>([1, 1, 1, 1, 2, 2, 2, 3])
 			assert bag.toSet == Set<of int>([1, 2, 3])
 				
 		def main
