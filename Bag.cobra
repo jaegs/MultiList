@@ -1,0 +1,292 @@
+namespace Jaegs
+	use System.Collections
+	class Bag<of T> implements ICollection<of T>, IEnumerable<of T>
+		"""
+		This class is a bag (AKA multiset) container. Unlike a set, a multiset allows the same
+		item to be inserted multiple times. For a mathematical background,
+		see http://en.wikipedia.org/wiki/Multiset
+
+		To get the number of times that a particular
+		item is in the bag, use count = bag[item].
+		Adding an item to the bag will increase it's count by one
+		bag[item] = amount will increase item's count by "amount"
+		As an invariant the count of an item must be >0 for all items
+		Removing an item decreases the count by one
+		Use removeAll to delete all occurances of a particular item.
+		"""
+	
+		var _data  as IDictionary<of T, int>
+
+		cue init
+			base.init
+			_data = Dictionary<of T, int>()
+		
+		cue init(items as T*)
+			.init
+			.addRange(items)
+
+		cue init(other as Bag<of T>)
+			.init
+			.addRange(other)
+
+		cue init(other as IDictionary<of T, int>)
+			.init
+			.addRange(other)
+
+		pro [item as T] as int
+			"""
+			If the item is not in the Bag, .get returns 0
+			For .set, see .add(item, num)
+			"""
+			get
+				return _data.get(item, 0)
+			set
+				require value > 0
+				_data[item] = this[item] + value
+
+		get count as int
+			"""
+			Total number of items in the bag
+			Equivalent to the sum of counts
+			"""
+			sum = 0
+			for kvp in .counts, sum += kvp.value
+			return sum
+
+		get uniqueCount
+			"""
+			Returns the total number of unique items
+			in the Bag.
+			"""
+			return _data.count
+			
+		get isReadOnly as bool
+			return false
+
+		get counts as KeyValuePair<of T, int>*
+			"""
+			In the returned Stream of KeyValuePairs,
+			the key is the item
+			and the value is the item's count
+			"""
+			for item, count in _data
+				yield KeyValuePair<of T, int>(item, count)
+			
+		def contains(item as T) as bool
+			return _data.keys.contains(item)
+
+		def items as IEnumerator<of T>
+			for item, count in _data, for c in count, yield item
+
+		def getEnumerator as System.Collections.IEnumerator
+			implements System.Collections.IEnumerable
+			return .getEnumerator
+
+		def getEnumerator as IEnumerator<of T>
+			return _data.keys.getEnumerator
+
+		cue enumerate as T*
+			for item, count in _data, for c in count, yield item
+	
+		def toList as IList<of T>
+			return List<of T>(.enumerate)
+
+		def toSet as Cobra.Core.ISet<of T>
+			return Set<of T>(_data.keys)
+
+		def add(item as T)
+			"""
+			Adding an instance of an item is 
+			equivalent to increasing the item's count by one 
+			"""
+			this[item] = 1
+
+		def add(item as T, num as int)
+			"""
+			Adds num instances of item to the Bag
+			This is equivalent to increasing the item's count by num.
+			Num must be >0.
+			"""
+			require num > 0
+			this[item] = num
+			
+		def addRange(other as Bag<of T>)
+			for item, count in other.counts, .add(item, count)
+
+		def addRange(other as IDictionary<of T, int>)
+			for item, count in other, .add(item, count)
+	
+		def addRange(items as T*)
+			for item in items, .add(item)
+
+		def remove(item as T) as bool
+			"""
+			Removes one instance of item from the Bag
+			This is equivalent to subtracting the item's count by one
+			"""
+			return .remove(item, 1)
+
+		def remove(item as T, num as int) as bool
+			"""
+			Removes num instances of item from the Bag
+			This is equivalent to subtracting the item's count by num
+			"""
+			if .contains(item)
+				_data[item] -= num
+				if _data[item] <= 0, _data.remove(item)
+				return true
+			return false
+
+		def removeAll(item as T) as bool
+			"""Removes all occurances of item from the Bag """
+			return _data.remove(item)
+
+
+		def clear
+			"""Removes all items from the Bag """
+			_data.clear
+
+		def copyTo(array as T[], arrayIndex as int)
+			_data.keys.copyTo(array, arrayIndex)
+
+		def equals(other as Object?) as bool is override
+			if not other inherits Bag<of T>, return false
+			return _data == (other to Bag<of T>)._data
+
+		def getHashCode as int is override
+			"""
+			As a completely mutable object, MultiList does not
+			support getHashCode
+			"""
+			throw NotSupportedException()
+
+		def toString as String is override
+			sb = StringBuilder().append(c'{')
+			pos = 0
+			count = .count
+			for item in .enumerate
+				sb.append(item)
+				if pos < count - 1, sb.append(", ")
+				pos += 1
+			sb.append(c'}')
+			return sb.toString
+
+		#Multiset math operations
+
+		def sum(other as Bag<of T>) as Bag<of T>
+			"""
+			Adds the counts of each Bag
+			"""
+			answer = Bag<of T>(this)
+			answer.addRange(other)
+			return answer
+			
+		def difference(other as Bag<of T>) as Bag<of T>
+			"""
+			Subtracts the counts of other from this Bag.
+			Only keeps items with count > 0
+			"""
+			answer = Bag<of T>(this)
+			toRemove = List<of T>()
+			for item, count in .counts
+				count = count #suppress warning
+				if other.contains(item)
+					newCount = answer[item] - other[item]
+					if newCount > 0, answer._data[item] = newCount
+					else, answer.removeAll(item)
+			return answer
+					
+		def union(other as Bag<of T>) as Bag<of T>
+			"""
+			Take the max count of each item from each Bag
+			"""
+			answer = Bag<of T>(this)
+			for item, count in other.counts
+				if answer[item] < count, answer._data[item] = count
+			return answer
+
+		def intersection(other as Bag<of T>) as Bag<of T> #WRONG
+			"""
+			Takes the min count of each item from each Bag
+			"""
+			for item, count in .counts
+				if other.contains(item)
+					answer[item] = max(count, other[item])
+			return answer
+
+		def mostCommon(num as int) as ICollection<of T>
+			throw NotImplementedException()
+
+		/#
+		These probably don't have much practical use but could be implemented
+		def isSubsetOf(s as Bag<of T>) as bool
+		def isSupersetOf(s as Bag<of T>) as bool
+		def product(other as Bag<of T>) as bool
+		def multiply(n as int)
+		def symmetricDifference(s as Bag<of T>) as Bag<of T>
+		#/
+
+	class TestBag
+		test
+			bag = Bag<of char>('mississippi')
+			assert bag.toList.sorted == [c'i', c'i', c'i', c'i', c'm', c'p', c'p', c's', c's', c's', c's'] 
+			assert bag[c'm'] == 1
+			assert bag[c'i'] == 4
+			assert bag[c'p'] == 2
+			assert bag[c's'] == 4
+
+		#sum
+		test
+			bag1 = Bag<of int>([1, 2, 2])
+			bag2 = Bag<of int>([0, 2, 2])
+			sumBag = bag1.sum(bag2)
+			assert sumBag[1] == 1 and sumBag[2] == 4 and sumBag[0] == 1
+
+		#union
+		test
+			bag1 = Bag<of int>([1, 2, 2])
+			bag2 = Bag<of int>([1, 1, 2])
+			unionBag = bag1.union(bag2)
+			assert unionBag[1] == 2 and unionBag[2] == 2
+
+		#intersection
+		test
+			bag1 = Bag<of int>([1, 2, 2])
+			bag2 = Bag<of int>([1, 1, 2])
+			interB = bag1.intersection(bag2)
+			assert interB[1] == 1 and interB[2] == 1
+
+		#difference
+		test
+			bag1 = Bag<of int>([1, 2, 2, 3, 3, 3])
+			bag2 = Bag<of int>([1, 1, 2, 3])
+			diffBag = bag1.difference(bag2)
+			assert diffBag[1] == 0 and diffBag[2] == 1 and diffBag[3] == 2
+			assert not diffBag.contains(1)
+
+		#toString
+		test
+			bag = Bag<of char>('mississippi')
+			assert bag.toString == '{m, i, i, i, i, s, s, s, s, p, p}'
+
+		#removeAll
+		test
+			bag = Bag<of char>('mississippi')
+			bag.removeAll(c'i')
+			assert not bag.contains(c'i')
+
+		#.set
+		test
+			bag= Bag<of int>()
+			expect Cobra.Core.RequireException, bag[3] = -2
+
+		#toSet
+		test
+			bag = Bag<of int>([1, 1, 1, 1, 2, 2, 2, 3]
+			assert bag.toSet == Set<of int>([1, 2, 3])
+				
+		def main
+			pass
+	
+		
+			
