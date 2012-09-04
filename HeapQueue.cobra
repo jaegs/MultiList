@@ -1,0 +1,149 @@
+namespace Jaegs
+
+	class HeapQueue<of T> 
+		var _data as List<of T>
+		var _comparer as Comparison<of T>
+
+		get comparer from var
+
+		get count as int
+			return _data.count
+
+		cue init(comparer as Comparison<of T>)
+			require _data.count > 0
+			base.init
+			_comparer = comparer
+			_data = List<of T>()
+
+		cue init(data as T*, comparer as Comparison<of T>)
+			.init(comparer)
+			for el in data
+				.push(el)
+
+		cue init(other as HeapQueue<of T>)
+			require _data.count > 0
+			base.init
+			_comparer = other._comparer
+			_data = List<of T>(other._data)
+
+		cue init(data as List<of T>, comparer as Comparison<of T>) is private
+			require data.count > 0
+			base.init
+			_data = data
+			_comparer = comparer
+			
+		def _siftDown(startPos as int, pos as int)
+			require
+				startPos >= 0
+				pos >= 0
+			body
+				newItem = _data[pos]
+				while pos > startPos
+					parentPos = (pos - 1) >> 1
+					parent = _data[parentPos]
+					if _comparer(parent, newItem) <> 1, break
+					_data[pos] = parent
+					pos = parentPos
+				_data[pos] = newItem
+			
+
+		def _siftUp(pos as int)
+			require pos >= 0
+			endPos = _data.count
+			startPos = pos
+			newItem = _data[pos]
+			childPos = 2 * pos + 1
+			while childPos < endPos
+				rightPos = childPos + 1
+				if rightPos < endPos and _comparer(_data[rightPos], _data[childPos]) <> 1
+					childPos = rightPos
+				_data[pos] = _data[childPos]
+				pos = childPos
+				childPos = 2 * pos + 1
+				_data[pos] = newItem
+			_siftDown(startPos, pos)
+
+		def heapify(data as List<of T>, comparer as Comparison<of T>) as HeapQueue<of T> is shared
+			require data.count > 0
+			hp = HeapQueue<of T>(data, comparer)
+			for i in hp._data.count//2 - 1: -1: -1
+				hp._siftUp(i)
+			trace hp._data
+			return hp
+
+		def sorted(data as List<of T>, comparer as Comparison<of T>) as IList<of T> is shared
+			require data.count > 0
+			hp = .heapify(data, comparer)
+			count = hp.count
+			return for i in count get hp.pop
+			
+				
+		def push(item as T)
+			_data.add(item)
+			_siftDown(0, _data.count - 1)
+
+		def pop as T
+			lastElt = _data.last
+			_data.removeLast
+			if _data.count > 0
+				returnItem = _data[0]
+				_data[0] = lastElt
+				_siftUp(0)
+			else
+				returnItem = lastElt
+			return returnItem	
+
+		def replace(item as T) as T
+			returnItem = _data[0]
+			_data[0] = item
+			_siftUp(0)
+			return returnItem
+
+		def nlargest(n as int) as IList<of T>
+			require n > 0
+			trace _data
+			answer = HeapQueue<of T>(_data[:n], _comparer)
+			if answer._data.count == 0
+				return answer._data
+			sol = answer._data[0]
+			for elem in _data
+				if _comparer(elem, sol) <> 1, continue
+				answer.replace(elem)
+				sol = answer._data[0]
+			answer._data.sort
+			answer._data.reverse #fix
+			return answer._data
+
+		def nsmallest(n as int) as IList<of T>
+			require n > 0 
+			return for i in Math.min(n, _data.count) get .pop
+
+		def equals(other as HeapQueue<of T>) as bool
+			if _comparer <> other._comparer, return false
+			if _data <> other._data, return false
+			return true
+
+		def equals(obj as Object?) as bool is override
+			if obj inherits HeapQueue<of T>, return .equals(obj)
+			return false
+
+		def getHashCode as int is override
+			"""
+			As a completely mutable object, MultiList does not
+			support getHashCode
+			"""
+			throw InvalidOperationException()
+
+	class TestHeapQueue
+		
+		test pop
+			intComparer as Comparison<of int> = do(a as int, b as int) = a.compareTo(b)
+			
+			hp = HeapQueue<of int>.heapify([2, 31, 6, 7, 8, 9, -4], intComparer)
+			#assert hp.nsmallest(3) == [-4, 2, 6]
+			trace HeapQueue<of int>.sorted([2, 31, 6, 7, 8, 9, -4], intComparer)
+			assert hp.nlargest(3) == [31, 9, 8]
+			trace 
+			
+		def main
+			pass

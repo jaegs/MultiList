@@ -1,0 +1,161 @@
+namespace Jaegs
+	class BiDictionary<of TKey, TValue> inherits IDictionary<of TKey, TValue>
+		"""
+		A BiDictionary is very similar to a regular Dictionary except that the
+		keys and values have a one-to-one relationship.
+		For every key, there is exactly one value.
+		For every value, there is exactly one key.
+		The advantage being that reverse lookups (value -> key) are now possible.
+		The .inverse method returns a BiDictionary view of the current BiDictionary
+		where the key set becomes the value set and the value set becomes the key set.
+		"""
+
+		var _forward as Dictionary<of TKey, TValue>
+		var _reverse as Dictionary<of TValue, TKey>
+
+		cue init
+			base.init
+			_forward = Dictionary<of TKey, TValue>()
+			_reverse = Dictionary<of TValue, TKey>()
+
+		cue init(dict as IDictionary<of TKey, TValue>)
+			.init
+			_addDict(dict)
+
+		cue init(capacity as int)
+			base.init
+			_forward = Dictionary<of TKey, TValue>(capacity)
+			_reverse = Dictionary<of TValue, TKey>(capacity)
+
+		cue init(capacity as int,
+				keyComparer as IEqualityComparer<of TKey>, 
+				valueComparer as IEqualityComparer<of TValue>)
+			_forward = Dictionary<of TKey, TValue>(capacity, keyComparer)
+			_reverse = Dictionary<of TValue, TKey>(capacity, valueComparer)
+
+		cue init(keyComparer as IEqualityComparer<of TKey>, valueComparer as IEqualityComparer<of TValue>)
+			.init(4, keyComparer, valueComparer)
+
+		cue init(other as BiDictionary<of TValue, TKey>) is private
+			""" View constructor used in .inverse """
+			base.init
+			_forward = other._reverse
+			_reverse = other._forward
+
+		get count as count
+			return _forward.count
+
+		get isReadOnly as bool
+			return false
+
+		pro [key as TKey] as TValue
+			"""
+			If the value is already contained within another key-value pair,
+			an InvalidOperationException will be thrown so as to not violate the
+			one-to-one invariant.
+			Consider using .forcePut to first remove the existing key-value pair
+			"""
+			get
+				return _forward[key]
+			set
+				if _foward[key] == value, return
+				else if _forward[key] == diffValue
+					assert _reverse[diffValue] == key
+					_reverse.remove(diffValue)
+					_reverse[value] = key
+					_forward[key] = value
+				else if not _reverse.containsKey(value)
+					_forward[key] = value
+					_reverse[value] = key
+				else 
+					assert _reverse.containsKey(value) and _reverse[value] <> key
+					throw InvalidOperationException("Cannot insert value [value] for key [key] since [value] "
+						+ "is already paired with [_reverse[value]]")			
+
+		get keys as ICollection<of TKey>
+			return _forward.keys()
+
+		get values as ICollection<of TValue>
+			return _reverse.keys()
+
+		def forceSet(key as TKey, val as TValue)
+			"""
+			Sets the key and value pair in all cases.
+			If the value is contained within an existing pair,
+			the existing pair is first removed.
+			"""
+			if _reverse.containsKey(val) and _reverse[val] <> key
+				diffKey = _reverse[val]
+				assert _forward[diffKey] == val
+				_forward.remove(diffKey)
+				_reverse.remove(val)
+			this[key] = val
+
+		def inverse as BiDictionary<of TValue, TKey>) as BiDictionary<of TKey, TValue>
+			"""
+			Returns an inverse view of the current BiDictionary
+			such that the original key set is now the value set
+			and the value set is now the key set.
+			Since the BiDictionary returned is a view, changes made
+			will appear in the original BiDictionary.
+			"""
+			return BiDictionary<of TKey, TValue>(this)
+
+		def add(kvp as KeyValuePair<of TKey, TValue>)
+			.add(kvp.key, kvp.val)
+		
+		def add(key as TKey, val as TValue)
+			require
+				not _forward.containsKey(key)
+				not _reverse.containsKey(val)
+			body
+				_forward[key] = val
+				_reverse[val] = key
+
+		def _addDict(dict as IDictionary<of TKey, TValue>)
+			if dict.count <> Set<of TValue>(dict.values).count
+				throw InvalidOperationException("Input dictionary is not a one-to-one mapping")
+			.addAll(dict)
+
+		def addAll(kvps as KeyValuePair<of TKey, TValue>*)
+			for k, v in kvps, .add(k,v)
+			
+		def clear
+			_reverse.clear
+			_forward.clear
+
+		def contains(kvp as KeyValuePair<of TKey, TValue>) as bool
+			return _forward.contains(kvp)
+
+		def containsKey(key as TKey) as bool
+			return _forward.containsKey(key)
+
+		def copyTo(T[] array, int arrayIndex)
+			return _forward.copyTo(array, arrayIndex)
+
+		def getEnumerator as IEnumerator<of KeyValuePair<of TKey, TValue>>
+			return _forward.getEnumerator
+
+		def getEnumerator as System.Collections.IEnumerator
+			implements System.Collections.IEnumerable
+			return .getEnumerator to System.Collections.IEnumerator
+
+		def remove(kvp as KeyValuePair<of TKey, TValue>)
+			assert _reverse[kvp.value] == kvp.key
+			_forward.remove(kvp)
+			_reverse.remove(kvp.value)
+
+		def remove(key as TKey)
+			val = _forward[key]
+			assert _reverse[val] == key
+			_forward.remove(key)
+			_reverse.remove(val)
+
+		def tryGetValue(key as TKey, val as out TValue) as bool
+			return _forward.tryGetValue(key, out val)
+		
+		
+
+		
+
+		
