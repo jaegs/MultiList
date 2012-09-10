@@ -129,7 +129,7 @@ namespace Jaegs
 
 		def getHashCode as int is override
 			"""
-			As a completely mutable object, MultiList does not
+			As a completely mutable object, HeapQueue does not
 			support getHashCode
 			"""
 			throw InvalidOperationException()

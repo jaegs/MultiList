@@ -1,21 +1,23 @@
 namespace Jaegs
 	use System.Collections
-	class Bag<of T> implements ICollection<of T>, IEnumerable<of T>
+	class CountedSet<of T> #implements ICollection<of T>, IEnumerable<of T>
 		"""
-		This class is a bag (AKA multiset) container. Unlike a set, a multiset allows the same
-		item to be inserted multiple times. For a mathematical background,
-		see http://en.wikipedia.org/wiki/Multiset
+		This class is a CountedSet (AKA multiset) container. Unlike a set, a multiset allows the same
+		item to be inserted multiple times.
+		For a computer science background, see
+		http://en.wikipedia.org/wiki/Set_(computer_science)#Multiset.
+		For a mathematical background, see
+		http://en.wikipedia.org/wiki/Multiset
 
 		To get the number of times that a particular
-		item is in the bag, use count = bag[item].
-		Adding an item to the bag will increase it's count by one
-		bag[item] = amount will increase item's count by "amount"
+		item is in the CountedSet, use count = CountedSet[item].
+		Adding an item to the CountedSet will increase it's count by one
 		As an invariant the count of an item must be >0 for all items
 		Removing an item decreases the count by one
 		Use removeAll to delete all occurances of a particular item.
 		"""
 	
-		var _data  as IDictionary<of T, int>
+		var 	_data as IDictionary<of T, int>
 
 		cue init
 			base.init
@@ -25,7 +27,7 @@ namespace Jaegs
 			.init
 			.addRange(items)
 
-		cue init(other as Bag<of T>)
+		cue init(other as CountedSet<of T>)
 			.init
 			.addRange(other)
 
@@ -35,18 +37,17 @@ namespace Jaegs
 
 		pro [item as T] as int
 			"""
-			If the item is not in the Bag, .get returns 0
-			For .set, see .add(item, num)
+			If the item is not in the CountedSet, .get returns 0
 			"""
 			get
 				return _data.get(item, 0)
 			set
 				require value > 0
-				_data[item] = this[item] + value
+				_data[item] = value
 
 		get count as int
 			"""
-			Total number of items in the bag
+			Total number of items in the CountedSet
 			Equivalent to the sum of counts
 			"""
 			sum = 0
@@ -56,7 +57,7 @@ namespace Jaegs
 		get uniqueCount
 			"""
 			Returns the total number of unique items
-			in the Bag.
+			in the CountedSet.
 			"""
 			return _data.count
 			
@@ -91,7 +92,7 @@ namespace Jaegs
 		def toList as IList<of T>
 			return List<of T>(.enumerate)
 
-		def toSet as Cobra.Core.ISet<of T>
+		def uniqueSet as Cobra.Core.ISet<of T>
 			return Set<of T>(_data.keys)
 
 		def add(item as T)
@@ -99,18 +100,18 @@ namespace Jaegs
 			Adding an instance of an item is 
 			equivalent to increasing the item's count by one 
 			"""
-			this[item] = 1
+			this[item] += 1
 
 		def add(item as T, num as int)
 			"""
-			Adds num instances of item to the Bag
+			Adds num instances of item to the CountedSet
 			This is equivalent to increasing the item's count by num.
 			Num must be >0.
 			"""
 			require num > 0
-			this[item] = num
+			this[item] += num
 			
-		def addRange(other as Bag<of T>)
+		def addRange(other as CountedSet<of T>)
 			for item, count in other.counts, .add(item, count)
 
 		def addRange(other as IDictionary<of T, int>)
@@ -121,41 +122,45 @@ namespace Jaegs
 
 		def remove(item as T) as bool
 			"""
-			Removes one instance of item from the Bag
+			Removes one instance of item from the CountedSet
 			This is equivalent to subtracting the item's count by one
 			"""
 			return .remove(item, 1)
 
-		def remove(item as T, num as int) as bool
+		def remove(item as T, num as int) as int
 			"""
-			Removes num instances of item from the Bag
+			Removes up to num instances of item from the CountedSet
 			This is equivalent to subtracting the item's count by num
+			Returns the actual number of items removed
 			"""
 			if .contains(item)
-				_data[item] -= num
-				if _data[item] <= 0, _data.remove(item)
-				return true
-			return false
+				maxNumRemoved = this[item]
+				this[item] -= num
+				if this[item] <= 0
+					_data.remove(item)
+					return maxNumRemoved
+				return num
+			return 0
 
 		def removeAll(item as T) as bool
-			"""Removes all occurances of item from the Bag """
+			"""Removes all occurances of item from the CountedSet """
 			return _data.remove(item)
 
 
 		def clear
-			"""Removes all items from the Bag """
+			"""Removes all items from the CountedSet """
 			_data.clear
 
 		def copyTo(array as T[], arrayIndex as int)
 			_data.keys.copyTo(array, arrayIndex)
 
 		def equals(other as Object?) as bool is override
-			if not other inherits Bag<of T>, return false
-			return _data == (other to Bag<of T>)._data
+			if not other inherits CountedSet<of T>, return false
+			return _data == (other to CountedSet<of T>)._data
 
 		def getHashCode as int is override
 			"""
-			As a completely mutable object, MultiList does not
+			As a completely mutable object, CountedSet does not
 			support getHashCode
 			"""
 			throw NotSupportedException()
@@ -173,46 +178,45 @@ namespace Jaegs
 
 		#Multiset math operations
 
-		def sum(other as Bag<of T>) as Bag<of T>
+		def sum(other as CountedSet<of T>) as CountedSet<of T>
 			"""
-			Adds the counts of each Bag
+			Adds the counts of each CountedSet
 			"""
-			answer = Bag<of T>(this)
+			answer = CountedSet<of T>(this)
 			answer.addRange(other)
 			return answer
 			
-		def difference(other as Bag<of T>) as Bag<of T>
+		def difference(other as CountedSet<of T>) as CountedSet<of T>
 			"""
-			Subtracts the counts of other from this Bag.
+			Subtracts the counts of other from this CountedSet.
 			Only keeps items with count > 0
 			"""
-			answer = Bag<of T>(this)
+			answer = CountedSet<of T>(this)
 			for item, count in .counts
 				count = count #suppress warning
 				if other.contains(item)
 					newCount = answer[item] - other[item]
-					if newCount > 0, answer._data[item] = newCount
+					if newCount > 0, answer[item] = newCount
 					else, answer.removeAll(item)
 			return answer
 					
-		def union(other as Bag<of T>) as Bag<of T>
+		def union(other as CountedSet<of T>) as CountedSet<of T>
 			"""
-			Take the max count of each item from each Bag
+			Take the max count of each item from each CountedSet
 			"""
-			answer = Bag<of T>(this)
+			answer = CountedSet<of T>(this)
 			for item, count in other.counts
-				if answer[item] < count, answer._data[item] = count
+				if answer[item] < count, answer[item] = count
 			return answer
 
-		def intersection(other as Bag<of T>) as Bag<of T>
+		def intersection(other as CountedSet<of T>) as CountedSet<of T>
 			"""
-			Takes the min count of each item from each Bag
+			Takes the min count of each item from each CountedSet
 			"""
-			answer = Bag<of T>()
+			answer = CountedSet<of T>()
 			for item, count in .counts
 				if other.contains(item)
-					answer._data[item] = Math.min(count, other[item])
-					trace item
+					answer[item] = Math.min(count, other[item])
 			return answer
 
 		def mostCommon(num as int) as ICollection<of T>
@@ -220,71 +224,63 @@ namespace Jaegs
 
 		/#
 		These probably don't have much practical use but could be implemented
-		def isSubsetOf(s as Bag<of T>) as bool
-		def isSupersetOf(s as Bag<of T>) as bool
-		def product(other as Bag<of T>) as bool
+		def isSubsetOf(s as CountedSet<of T>) as bool
+		def isSupersetOf(s as CountedSet<of T>) as bool
+		def product(other as CountedSet<of T>) as bool
 		def multiply(n as int)
-		def symmetricDifference(s as Bag<of T>) as Bag<of T>
+		def symmetricDifference(s as CountedSet<of T>) as CountedSet<of T>
 		#/
 
-	class TestBag
+	class TestCountedSet
 		test
-			bag = Bag<of char>('mississippi')
-			assert bag.toList.sorted == [c'i', c'i', c'i', c'i', c'm', c'p', c'p', c's', c's', c's', c's'] 
-			assert bag[c'm'] == 1
-			assert bag[c'i'] == 4
-			assert bag[c'p'] == 2
-			assert bag[c's'] == 4
+			CountedSet = CountedSet<of char>('mississippi')
+			assert CountedSet.toList.sorted == [c'i', c'i', c'i', c'i', c'm', c'p', c'p', c's', c's', c's', c's'] 
+			assert CountedSet[c'm'] == 1
+			assert CountedSet[c'i'] == 4
+			assert CountedSet[c'p'] == 2
+			assert CountedSet[c's'] == 4
 
-		#sum
-		test
-			bag1 = Bag<of int>([1, 2, 2])
-			bag2 = Bag<of int>([0, 2, 2])
-			sumBag = bag1.sum(bag2)
-			assert sumBag[1] == 1 and sumBag[2] == 4 and sumBag[0] == 1
+		test sum
+			CountedSet1 = CountedSet<of int>([1, 2, 2])
+			CountedSet2 = CountedSet<of int>([0, 2, 2])
+			sumCountedSet = CountedSet1.sum(CountedSet2)
+			assert sumCountedSet[1] == 1 and sumCountedSet[2] == 4 and sumCountedSet[0] == 1
 
-		#union
-		test
-			bag1 = Bag<of int>([1, 2, 2])
-			bag2 = Bag<of int>([1, 1, 2])
-			unionBag = bag1.union(bag2)
-			assert unionBag[1] == 2 and unionBag[2] == 2
+		test union
+			CountedSet1 = CountedSet<of int>([1, 2, 2])
+			CountedSet2 = CountedSet<of int>([1, 1, 2])
+			unionCountedSet = CountedSet1.union(CountedSet2)
+			assert unionCountedSet[1] == 2 and unionCountedSet[2] == 2
 
-		#intersection
-		test
-			bag1 = Bag<of int>([1, 2, 2, 3])
-			bag2 = Bag<of int>([1, 1, 2])
-			interB = bag1.intersection(bag2)
+		test intersection
+			CountedSet1 = CountedSet<of int>([1, 2, 2, 3])
+			CountedSet2 = CountedSet<of int>([1, 1, 2])
+			interB = CountedSet1.intersection(CountedSet2)
 			assert interB[1] == 1 and interB[2] == 1 and interB[3] == 0
 
-		#difference
-		test
-			bag1 = Bag<of int>([1, 2, 2, 3, 3, 3])
-			bag2 = Bag<of int>([1, 1, 2, 3])
-			diffBag = bag1.difference(bag2)
-			assert diffBag[1] == 0 and diffBag[2] == 1 and diffBag[3] == 2
-			assert not diffBag.contains(1)
+		test difference
+			CountedSet1 = CountedSet<of int>([1, 2, 2, 3, 3, 3])
+			CountedSet2 = CountedSet<of int>([1, 1, 2, 3])
+			diffCountedSet = CountedSet1.difference(CountedSet2)
+			assert diffCountedSet[1] == 0 and diffCountedSet[2] == 1 and diffCountedSet[3] == 2
+			assert not diffCountedSet.contains(1)
 
-		#toString
-		test
-			bag = Bag<of char>('mississippi')
-			assert bag.toString == '{m, i, i, i, i, s, s, s, s, p, p}'
+		test toString
+			CountedSet = CountedSet<of char>('mississippi')
+			assert CountedSet.toString == '{m, i, i, i, i, s, s, s, s, p, p}'
 
-		#removeAll
-		test
-			bag = Bag<of char>('mississippi')
-			bag.removeAll(c'i')
-			assert not bag.contains(c'i')
+		test removeAll
+			CountedSet = CountedSet<of char>('mississippi')
+			CountedSet.removeAll(c'i')
+			assert not CountedSet.contains(c'i')
 
-		#.set
-		/#test
-			bag= Bag<of int>()
-			expect Cobra.Core.RequireException, bag[3] = -2 #/
+		/#test set
+			CountedSet= CountedSet<of int>()
+			expect Cobra.Core.RequireException, CountedSet[3] = -2 #/
 
-		#toSet
-		test
-			bag = Bag<of int>([1, 1, 1, 1, 2, 2, 2, 3])
-			assert bag.toSet == Set<of int>([1, 2, 3])
+		test uniqueSet
+			CountedSet = CountedSet<of int>([1, 1, 1, 1, 2, 2, 2, 3])
+			assert CountedSet.uniqueSet == Set<of int>([1, 2, 3])
 				
 		def main
 			pass

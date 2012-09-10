@@ -1,8 +1,8 @@
-namespace Cobra.CoreX
+namespace Cobra.Core
 
 	class MultiList<of A>
 		"""
-		This class provides a generic n-dimensional multi-list container.
+		This class provides a generic n-dimensional multi-list containing any other type.
 		The shape of a MultiList is a list of ints specifying the length of each dimension.
 		Dimensions are called axes.
 		The count is the total number of elements in the ML.
@@ -496,6 +496,10 @@ namespace Cobra.CoreX
 			ml3.permute([2, 1, 0])
 			assert ml3.slice(Pair<of int>(0, 1), Pair<of int>(0, 1)).toString == r'[[[5, 13]]]'
 			assert ml3.slice(Pair<of int>(0, 1), Pair<of int>(0, 1)).shape == [1, 1, 2]
+# 2012-07-31 Could not install Cobra without commenting out the following line, which failed 
+# issue is that installation builds Cobra.Core with -turbo 
+# see discussion at http://cobra-language.com/forums/viewtopic.php?f=4&t=974&p=4966#p4966 
+#           expect AssertException, ml3[1,1,1] = 5 			
 			expect AssertException, ml3[1, 1, 1] = 5
 
 			assert ml2.equals(ml2)
@@ -554,6 +558,3 @@ namespace Cobra.CoreX
 			ml6 = ml5.view #make .isReferred = true
 			ml6 = ml6 #suppresss warning
 			expect InvalidOperationException, ml5.reshape([1, 2])
-
-		def main
-			pass
